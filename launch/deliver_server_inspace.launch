@@ -1,0 +1,12 @@
+<launch>
+  <param name="/amcl/initial_pose_x" value="12.2" />
+  <param name="/amcl/initial_pose_y" value="12.2" />
+  <param name="/amcl/initial_pose_a" value="0.00" />
+
+  <!-- main delivery launch -->
+  <include file="$(find pr2_delivery)/launch/deliver_server.launch" />
+
+  <!-- load the map -->
+  <node name="map_server" pkg="map_server" type="map_server"
+  	args="$(find amcl)/map/InspaceFullClean.pgm 0.02" />
+</launch>

@@ -30,9 +30,11 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-PACKAGE='pr2_delivery'
+PACKAGE = 'pr2_delivery'
 
-import roslib; roslib.load_manifest(PACKAGE)
+import os
+import roslib
+roslib.load_manifest(PACKAGE)
 import subprocess
 import rospy
 import actionlib
@@ -42,88 +44,164 @@ from pr2_delivery.msg import DeliverAction, DeliverGoal
 from ArmMover import ArmMover
 from pr2_gripper_sensor_msgs.msg import PR2GripperEventDetectorAction, PR2GripperEventDetectorGoal
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from std_srvs.srv import Empty
+
 
 class DeliverServer:
 
-    tucked_with_object_pose = [-0.0175476818422744, 1.1720448201611564, -1.3268105758514066, -1.288722079574422, -31.28968470078213, -2.0089650532319836, -5.841424529413016]
+    tucked_with_object_pose = [-0.0175476818422744, 1.1720448201611564,
+                               -1.3268105758514066, -1.288722079574422,
+                               -31.28968470078213, -2.0089650532319836,
+                               -5.841424529413016]
     tuck_approach_pose = [0.039, 1.1072, 0.0, -2.067, -1.231, -1.998, 0.369]
-    accept_object_pose = [ -0.07666010001780543,   0.1622352230632809,   -0.31320771836735584,   -1.374860652847621,   -3.1324415863359545,   -1.078194355846691,   1.857217828689617]
-    tucked_with_object_approach_pose = [-0.01829384139848722, 0.6712428753827848, -1.3264898661986668, -0.6078654239376914, 0.601472182148825, -1.3278329090728338, -5.83346239703479]
+    accept_object_pose = [-0.07666010001780543, 0.1622352230632809,
+                          -0.31320771836735584, - 1.374860652847621,
+                          -3.1324415863359545, -1.078194355846691,
+                          1.857217828689617]
+    tucked_with_object_approach_pose = [-0.01829384139848722, 0.6712428753827848,
+                                        -1.3264898661986668,
+                                        -0.6078654239376914,
+                                        0.601472182148825, -1.3278329090728338,
+                                        -5.83346239703479]
 
     def __init__(self):
-        self.tuck_arm_client = actionlib.SimpleActionClient("tuck_arms", pr2_common_action_msgs.msg.TuckArmsAction)
-        self.gripper_wiggle_detector_client = actionlib.SimpleActionClient('r_gripper_sensor_controller/event_detector', PR2GripperEventDetectorAction)
-        self.move_base_client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
+        self.tuck_arm_client = actionlib.SimpleActionClient(
+            "tuck_arms", pr2_common_action_msgs.msg.TuckArmsAction)
+        self.gripper_wiggle_detector_client = actionlib.SimpleActionClient(
+            'r_gripper_sensor_controller/event_detector', PR2GripperEventDetectorAction)
+        self.move_base_client = actionlib.SimpleActionClient(
+            'move_base', MoveBaseAction)
+        self.clear_costmaps_client = rospy.ServiceProxy(
+            '/move_base_node/clear_costmaps', Empty)
+        self.fetch = rospy.Service('fetch', Empty, self.fetch_request)
 
         # Load phrases
         self.lang = rospy.get_param('~lang', 'en')
-        
-        self.request_item_phrase = rospy.get_param('~request_item_phrase', 'Please give me the delivery.')
-        self.item_received_phrase = rospy.get_param('~item_received_phrase', 'Thank you. I will deliver this.')
-        self.give_item_phrase = rospy.get_param('~give_item_phrase', 'I have a delivery for you.')
-        self.item_delivered_phrase = rospy.get_param('~item_delivered_phrase', 'Thank you. Have a nice day.')
+
+        self.pr2_go = False
+        self.start_delivery_phrase = rospy.get_param(
+            '~start_delivery_phrase', 'I believe Svett needs a laser scanner.')
+        self.request_item_phrase = rospy.get_param('~request_item_phrase',
+                                                   'Alex, do you have a laser scanner for me?.')
+        self.item_received_phrase = rospy.get_param('~item_received_phrase',
+                                                    'Thank you. I will give this to Svett.')
+        self.give_item_phrase = rospy.get_param('~give_item_phrase',
+                                                'Here is your laser scanner, Svett.')
+        self.item_delivered_phrase = rospy.get_param('~item_delivered_phrase',
+                                                     'You\'re welcome. Good luck with the assembly.')
+        self.home_phrase = rospy.get_param('~home_phrase',
+                                           'Please ask us any questions.')
 
         self.arm_mover = ArmMover()
 
         rospy.loginfo("Waiting for tuck_arms action server")
         self.tuck_arm_client.wait_for_server(rospy.Duration(10.0))
         rospy.loginfo("Waiting for wiggle_detector action server")
-        self.gripper_wiggle_detector_client.wait_for_server(rospy.Duration(10.0))
+        self.gripper_wiggle_detector_client.wait_for_server(
+            rospy.Duration(10.0))
         rospy.loginfo("Waiting for move_base action server")
         self.move_base_client.wait_for_server(rospy.Duration(10.0))
+        rospy.loginfo("Waiting for clear costmaps service")
+        rospy.wait_for_service('/move_base_node/clear_costmaps')
 
-        self.server = actionlib.SimpleActionServer('deliver', DeliverAction, self.execute, False)
+        self.server = actionlib.SimpleActionServer(
+            'deliver', DeliverAction, self.execute, False)
         self.server.start()
-        
+
         rospy.loginfo("Ready")
 
     def execute(self, goal):
         """This is the main sequence of the delivery action."""
-        self.tuck_arms()
-        self.navigate_to(goal.get_object_pose)
-        self.say(self.request_item_phrase)
-        self.get_object()
-        self.say(self.item_received_phrase)
-        self.navigate_to(goal.give_object_pose)
-        self.say(self.give_item_phrase)
-        self.give_object()
-        self.say(self.item_delivered_phrase)
-        self.tuck_arms()
-        self.navigate_to(goal.return_home_pose)
+        try:
+            self.tuck_arms()
+            self.wait_for_signal()
+            self.say(self.start_delivery_phrase)
+            self.navigate_to(goal.get_object_pose)
+            self.say(self.request_item_phrase)
+            self.get_object()
+            self.say(self.item_received_phrase)
+            self.deliver_signal()
+            self.navigate_to(goal.give_object_pose)
+            self.say(self.give_item_phrase)
+            self.give_object()
+            self.say(self.item_delivered_phrase)
+            self.tuck_arms()
+            self.navigate_to(goal.return_home_pose)
+            self.say(self.home_phrase)
+            self.server.set_succeeded()
+            self.pr2_go = False
+        except Exception, error:
+            rospy.logerr("Delivery failed: %s" % error)
+            # sys.exit(0)
 
-        self.server.set_succeeded()
+    def fetch_request(self, req):
+        """Fetch service signal to know when PR2 may go fetch"""
+        self.pr2_go = True
+        return []
+
+    def deliver_signal(self):
+        try:
+            os.system("bash -i -c 'export ROS_MASTER_URI=\"http://jazz:11311\" && rosservice call /deliver \"{}\"'")
+        except rospy.ServiceException, error:
+            rospy.loginfo("Service call failed: %s" % error)
+
+    def wait_for_signal(self):
+        rate = rospy.Rate(10)  # 10 Hz
+        rospy.loginfo("waiting for fetch signal...")
+        while not rospy.is_shutdown() and not self.pr2_go:
+            rate.sleep()
 
     def say(self, thing_to_say):
-        #rospy.loginfo("saying '%s'" % thing_to_say)
         # say something
         speed = 130
-        subprocess.call([ 'espeak', 
-                        "-v", self.lang,
-                        "-s", "%d"%speed,
-                        thing_to_say ])
+        subprocess.call(['espeak',
+                         "-v", self.lang,
+                         "-s", "%d" % speed,
+                         thing_to_say, " &"])
+
+    def clear_costmaps(self):
+        rospy.loginfo("clearing costmaps")
+        try:
+            self.clear_costmaps_client()
+        except rospy.ServiceException, error:
+            rospy.loginfo("Service call failed: %s" % error)
 
     def tuck_arms(self):
         rospy.loginfo("tucking arms")
         goal = pr2_common_action_msgs.msg.TuckArmsGoal()
         goal.tuck_left = True
         goal.tuck_right = True
-        self.tuck_arm_client.send_goal_and_wait(goal, rospy.Duration(30.0), rospy.Duration(5.0))
+        self.tuck_arm_client.send_goal_and_wait(
+            goal, rospy.Duration(30.0), rospy.Duration(5.0))
+        # self.tuck_arm_client.cancel_goal()
 
     def navigate_to(self, nav_goal_pose):
-        rospy.loginfo("navigating to %f %f" % (nav_goal_pose.pose.position.x, 
-                      nav_goal_pose.pose.position.y))
+        self.clear_costmaps()
+        rospy.loginfo("navigating to %f %f" % (nav_goal_pose.pose.position.x,
+                                               nav_goal_pose.pose.position.y))
         goal = MoveBaseGoal()
         goal.target_pose = nav_goal_pose
-        self.move_base_client.send_goal_and_wait(goal, rospy.Duration(60*5), rospy.Duration(5))
+        rospy.loginfo("navigating to state before")
+        rospy.loginfo(self.move_base_client.get_state())
+        self.move_base_client.send_goal_and_wait(
+            goal, rospy.Duration(60*5), rospy.Duration(5))
+        rospy.loginfo("navigating to state after")
+        rospy.loginfo(self.move_base_client.get_state())
+        self.move_base_client.cancel_goal()
+        rospy.loginfo("navigating to state after cancel")
+        rospy.loginfo(self.move_base_client.get_state())
 
     def wait_for_gripper_wiggle(self, accel):
         """Waits for one year.  accel is in m/s^2, normal values are 6 and 10"""
         # contents of function ported from pr2_props
         goal = PR2GripperEventDetectorGoal()
-        goal.command.trigger_conditions = 4 # use just acceleration as our contact signal
+        # use just acceleration as our contact signal
+        goal.command.trigger_conditions = 4
         goal.command.acceleration_trigger_magnitude = accel
-        goal.command.slip_trigger_magnitude = 0.008 # slip gain
-        self.gripper_wiggle_detector_client.send_goal_and_wait(goal, rospy.Duration(3600*24*365), rospy.Duration(5.0))
+        goal.command.slip_trigger_magnitude = 0.008  # slip gain
+        self.gripper_wiggle_detector_client.send_goal_and_wait(
+            goal, rospy.Duration(3600), rospy.Duration(5))
+        self.gripper_wiggle_detector_client.cancel_goal()
 
     def get_object(self):
         rospy.loginfo("getting object")
@@ -137,7 +215,7 @@ class DeliverServer:
             self.arm_mover.open_right()
             rospy.sleep(2)
             # - wait for externally-applied hand motion detected (ala "fist-pump" demo)
-            self.wait_for_gripper_wiggle(10) # m/s^2
+            self.wait_for_gripper_wiggle(10)  # m/s^2
             # - close gripper all the way
             self.arm_mover.close_right()
             # - if gripper closes all the way, no object is gripped
@@ -156,14 +234,15 @@ class DeliverServer:
         # move out to tucked-with-object approach pose for right arm
         self.arm_mover.go('r', self.tucked_with_object_approach_pose, 2)
         # - move right arm to give-object pose
-        self.arm_mover.go('r', self.accept_object_pose, 2) # give-object pose is the same as accept-object pose.
+        # give-object pose is the same as accept-object pose.
+        self.arm_mover.go('r', self.accept_object_pose, 2)
         # - let arm motion settle
-        rospy.sleep(2) 
+        rospy.sleep(2)
         # - wait for externally-applied hand motion detected (ala "fist-pump" demo)
-        self.wait_for_gripper_wiggle(5) # m/s^2
+        self.wait_for_gripper_wiggle(5)  # m/s^2
         # - open gripper
         self.arm_mover.open_right()
-        rospy.sleep(1) 
+        rospy.sleep(1)
 
 # Question: what if sequence is pre-empted while robot is holding object?
 # - maybe set the object on the floor?
