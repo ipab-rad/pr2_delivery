@@ -41,6 +41,7 @@ import actionlib
 import geometry_msgs.msg
 import pr2_common_action_msgs.msg
 from pr2_delivery.msg import DeliverAction, DeliverGoal
+from pr2_head.srv import Query
 from ArmMover import ArmMover
 from pr2_gripper_sensor_msgs.msg import PR2GripperEventDetectorAction, PR2GripperEventDetectorGoal
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
@@ -80,13 +81,13 @@ class DeliverServer:
 
         self.pr2_go = False
         self.start_delivery_phrase = rospy.get_param(
-            '~start_delivery_phrase', 'I believe Svett needs a laser scanner.')
+            '~start_delivery_phrase', 'I believe Daniel needs a laser scanner.')
         self.request_item_phrase = rospy.get_param('~request_item_phrase',
                                                    'Alex, do you have a laser scanner for me?.')
         self.item_received_phrase = rospy.get_param('~item_received_phrase',
-                                                    'Thank you. I will give this to Svett.')
+                                                    'Thank you. I will give this to Daniel.')
         self.give_item_phrase = rospy.get_param('~give_item_phrase',
-                                                'Here is your laser scanner, Svett.')
+                                                'Here is your laser scanner, Daniel.')
         self.item_delivered_phrase = rospy.get_param('~item_delivered_phrase',
                                                      'You\'re welcome. Good luck with the assembly.')
         self.home_phrase = rospy.get_param('~home_phrase',
@@ -107,6 +108,7 @@ class DeliverServer:
         self.server = actionlib.SimpleActionServer(
             'deliver', DeliverAction, self.execute, False)
         self.server.start()
+        self.say("PR2 Delivery Ready")
 
         rospy.loginfo("Ready")
 
@@ -136,6 +138,7 @@ class DeliverServer:
 
     def fetch_request(self, req):
         """Fetch service signal to know when PR2 may go fetch"""
+	rospy.loginfo("FETCHING!")
         self.pr2_go = True
         return []
 
@@ -152,12 +155,13 @@ class DeliverServer:
             rate.sleep()
 
     def say(self, thing_to_say):
-        # say something
-        speed = 130
-        subprocess.call(['espeak',
-                         "-v", self.lang,
-                         "-s", "%d" % speed,
-                         thing_to_say, " &"])
+        rospy.loginfo("saying '%s'" % thing_to_say)
+        try:
+            speak = rospy.ServiceProxy('/pr2_head/say', Query)
+            resp1 = speak(thing_to_say)
+            return resp1.success
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
 
     def clear_costmaps(self):
         rospy.loginfo("clearing costmaps")

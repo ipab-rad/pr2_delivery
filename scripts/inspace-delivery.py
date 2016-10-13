@@ -27,9 +27,9 @@ if __name__ == '__main__':
 
     goal = DeliverGoal()
     # Fill in goal here.
-    goal.get_object_pose = pose_from_xytheta( 12.7, 13.1, 1.52 )
-    goal.give_object_pose = pose_from_xytheta( 13.4, 9.2, -1.52 )
-    goal.return_home_pose = pose_from_xytheta( 12.7, 12.2, 0 )
+    goal.get_object_pose = pose_from_xytheta( 2.9, 9.67, 0.8 )
+    goal.give_object_pose = pose_from_xytheta( 3.3, 5.2, -0.8 )
+    goal.return_home_pose = pose_from_xytheta( 2.6, 8.2, 0 )
 
     rospy.loginfo("sending goal.")
     client.send_goal(goal)
