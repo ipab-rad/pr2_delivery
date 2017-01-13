@@ -65,6 +65,9 @@ class DeliverServer:
                                         0.601472182148825, -1.3278329090728338,
                                         -5.83346239703479]
 
+    wiggle_acceleration = 2
+
+
     def __init__(self):
         self.tuck_arm_client = actionlib.SimpleActionClient(
             "tuck_arms", pr2_common_action_msgs.msg.TuckArmsAction)
@@ -92,6 +95,7 @@ class DeliverServer:
                                                      'You\'re welcome. Good luck with the assembly.')
         self.home_phrase = rospy.get_param('~home_phrase',
                                            'Please ask us any questions.')
+        self.wiggle_acceleration = rospy.get_param('~wiggle_acceleration', 2)
 
         self.arm_mover = ArmMover()
 
@@ -219,12 +223,12 @@ class DeliverServer:
             self.arm_mover.open_right()
             rospy.sleep(2)
             # - wait for externally-applied hand motion detected (ala "fist-pump" demo)
-            self.wait_for_gripper_wiggle(10)  # m/s^2
+            self.wait_for_gripper_wiggle(wiggle_acceleration)  # m/s^2
             # - close gripper all the way
             self.arm_mover.close_right()
             # - if gripper closes all the way, no object is gripped
             gripper_pos = self.arm_mover.joints['r_gripper_joint'].position
-            if gripper_pos > 0.02:
+            if gripper_pos > 0.01:
                 rospy.loginfo("gripper has object: %f", gripper_pos)
                 object_gripped = True
             else:
@@ -243,7 +247,7 @@ class DeliverServer:
         # - let arm motion settle
         rospy.sleep(2)
         # - wait for externally-applied hand motion detected (ala "fist-pump" demo)
-        self.wait_for_gripper_wiggle(5)  # m/s^2
+        self.wait_for_gripper_wiggle(wiggle_acceleration)  # m/s^2
         # - open gripper
         self.arm_mover.open_right()
         rospy.sleep(1)

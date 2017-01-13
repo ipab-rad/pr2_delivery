@@ -7,6 +7,7 @@
   <include file="$(find pr2_delivery)/launch/deliver_server.launch" />
 
   <!-- load the map -->
-  <node name="map_server" pkg="map_server" type="map_server"
-  	args="$(find amcl)/map/InspaceFullClean.pgm 0.02" />
+  <!-- EDITED BY DANIEL 12Jan17 -m 'maps server already started in nav.launch'
+	<node name="map_server" pkg="map_server" type="map_server"
+  	args="$(find amcl)/map/InspaceFullClean.pgm 0.02" /> -->
 </launch>

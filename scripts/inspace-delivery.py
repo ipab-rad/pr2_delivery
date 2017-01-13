@@ -27,12 +27,17 @@ if __name__ == '__main__':
 
     goal = DeliverGoal()
     # Fill in goal here.
-    goal.get_object_pose = pose_from_xytheta( 2.9, 9.67, 0.8 )
+    goal.get_object_pose = pose_from_xytheta( 3.7, 9.7, 1.5 ) # moved x +1m; moved y +1m; th was 0.8
     goal.give_object_pose = pose_from_xytheta( 3.3, 5.2, -0.8 )
-    goal.return_home_pose = pose_from_xytheta( 2.6, 8.2, 0 )
+    goal.return_home_pose = pose_from_xytheta( 3.1, 8.2, 0.8 ) # 2.4; 8.2, 0
 
     rospy.loginfo("sending goal.")
     client.send_goal(goal)
     client.wait_for_result(rospy.Duration.from_sec(50.0))
+    print(client.get_result())
+    if (client.get_state() == GoalStatus.SUCCEEDED):
+        print("Success")
+    else:
+        print("failed!")
     rospy.loginfo("got action finished.")
     rospy.sleep(50)
