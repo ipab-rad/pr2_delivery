@@ -84,13 +84,13 @@ class DeliverServer:
 
         self.pr2_go = False
         self.start_delivery_phrase = rospy.get_param(
-            '~start_delivery_phrase', 'I believe Daniel needs a laser scanner.')
+            '~start_delivery_phrase', 'I believe Svett needs a laser scanner.')
         self.request_item_phrase = rospy.get_param('~request_item_phrase',
-                                                   'Alex, do you have a laser scanner for me?.')
+                                                   'Daniel, do you have a laser scanner for me?.')
         self.item_received_phrase = rospy.get_param('~item_received_phrase',
-                                                    'Thank you. I will give this to Daniel.')
+                                                    'Thank you. I will give this to Svett.')
         self.give_item_phrase = rospy.get_param('~give_item_phrase',
-                                                'Here is your laser scanner, Daniel.')
+                                                'Here is your laser scanner, Svett.')
         self.item_delivered_phrase = rospy.get_param('~item_delivered_phrase',
                                                      'You\'re welcome. Good luck with the assembly.')
         self.home_phrase = rospy.get_param('~home_phrase',
@@ -223,7 +223,7 @@ class DeliverServer:
             self.arm_mover.open_right()
             rospy.sleep(2)
             # - wait for externally-applied hand motion detected (ala "fist-pump" demo)
-            self.wait_for_gripper_wiggle(wiggle_acceleration)  # m/s^2
+            self.wait_for_gripper_wiggle(self.wiggle_acceleration)  # m/s^2
             # - close gripper all the way
             self.arm_mover.close_right()
             # - if gripper closes all the way, no object is gripped
@@ -247,7 +247,7 @@ class DeliverServer:
         # - let arm motion settle
         rospy.sleep(2)
         # - wait for externally-applied hand motion detected (ala "fist-pump" demo)
-        self.wait_for_gripper_wiggle(wiggle_acceleration)  # m/s^2
+        self.wait_for_gripper_wiggle(self.wiggle_acceleration)  # m/s^2
         # - open gripper
         self.arm_mover.open_right()
         rospy.sleep(1)

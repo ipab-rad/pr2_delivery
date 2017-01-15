@@ -1,8 +1,4 @@
 <launch>
-  <param name="/amcl/initial_pose_x" value="12.2" />
-  <param name="/amcl/initial_pose_y" value="12.2" />
-  <param name="/amcl/initial_pose_a" value="0.00" />
-
   <!-- main delivery launch -->
   <include file="$(find pr2_delivery)/launch/deliver_server.launch" />
 

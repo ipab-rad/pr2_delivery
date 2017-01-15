@@ -1,7 +1,8 @@
 <launch>
-  <param name="/amcl/initial_pose_x" value="2.6" />
-  <param name="/amcl/initial_pose_y" value="8.2" />
+  <param name="/amcl/initial_pose_x" value="2.08" />
+  <param name="/amcl/initial_pose_y" value="8.43" />
   <param name="/amcl/initial_pose_a" value="0.00" />
+  <param name="/amcl/min_particles" value="1000" />
 
   <!-- load the map -->
   <node name="map_server" pkg="map_server" type="map_server"
@@ -9,7 +10,6 @@
 
   <include file="$(find pr2_machine)/$(env ROBOT).machine" />
   <include file="$(find pr2_navigation_global)/amcl_node.xml" />
-  <!-- <include file="$(find pr2_navigation_teleop)/teleop.xml" /> -->
   <!-- <include file="$(find pr2_navigation_teleop)/teleop.xml" /> -->
 
   <!-- <include file="$(find pr2_navigation_perception)/lasers_and_filters.xml" /> -->
