@@ -4,7 +4,9 @@
 
   <!-- Action server for tucking arms the normal way. -->
   <node pkg="pr2_position_scripts" type="head_up.py" name="head_up" />
-  <node pkg="pr2_position_scripts" type="torso_down.py" name="torso_down" />
+
+  <!-- EDIT Yordan, 21/06, experimenting for UK robo week -->
+  <!-- <node pkg="pr2_position_scripts" type="torso_down.py" name="torso_down" /> -->
 
   <!-- Action server for sensing motion of the grippers during pickup and dropoff. -->
   <include file="$(find pr2_gripper_sensor_action)/launch/pr2_gripper_sensor_actions.launch" />

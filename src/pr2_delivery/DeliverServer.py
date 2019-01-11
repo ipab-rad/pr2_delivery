@@ -81,20 +81,22 @@ class DeliverServer:
 
         # Load phrases
         self.lang = rospy.get_param('~lang', 'en')
+        self.person_with_laserscanner = 'Michael'
+        self.person_needing_laserscanner = 'Yordan'
 
         self.pr2_go = False
         self.start_delivery_phrase = rospy.get_param(
-            '~start_delivery_phrase', 'I believe Svett needs a laser scanner.')
+            '~start_delivery_phrase', 'I believe {} needs a laser scanner.'.format(self.person_needing_laserscanner))
         self.request_item_phrase = rospy.get_param('~request_item_phrase',
-                                                   'Daniel, do you have a laser scanner for me?.')
+                                                   '{}, do you have a laser scanner for me?.'.format(self.person_with_laserscanner))
         self.item_received_phrase = rospy.get_param('~item_received_phrase',
-                                                    'Thank you. I will give this to Svett.')
+                                                    'Thank you. I will give this to {}.'.format(self.person_needing_laserscanner))
         self.give_item_phrase = rospy.get_param('~give_item_phrase',
-                                                'Here is your laser scanner, Svett.')
+                                                'Here is your laser scanner, {}.'.format(self.person_needing_laserscanner))
         self.item_delivered_phrase = rospy.get_param('~item_delivered_phrase',
                                                      'You\'re welcome. Good luck with the assembly.')
         self.home_phrase = rospy.get_param('~home_phrase',
-                                           'Please ask us any questions.')
+                                           'Thanks!.')
         self.wiggle_acceleration = rospy.get_param('~wiggle_acceleration', 2)
 
         self.arm_mover = ArmMover()
@@ -121,11 +123,14 @@ class DeliverServer:
         try:
             self.tuck_arms()
             self.wait_for_signal()
+            rospy.loginfo("*****************************")
+            # rospy.sleep(10)
             self.say(self.start_delivery_phrase)
             self.navigate_to(goal.get_object_pose)
             self.say(self.request_item_phrase)
             self.get_object()
             self.say(self.item_received_phrase)
+
             self.deliver_signal()
             self.navigate_to(goal.give_object_pose)
             self.say(self.give_item_phrase)
@@ -142,7 +147,7 @@ class DeliverServer:
 
     def fetch_request(self, req):
         """Fetch service signal to know when PR2 may go fetch"""
-	rospy.loginfo("FETCHING!")
+        rospy.loginfo("FETCHING!")
         self.pr2_go = True
         return []
 

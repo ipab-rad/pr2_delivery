@@ -27,11 +27,12 @@ if __name__ == '__main__':
     client.wait_for_server()
 
     goal = DeliverGoal()
+  # <param name="/amcl/initial_pose_x" value="2.00" />
+  # <param name="/amcl/initial_pose_y" value="11.60" />
     # Fill in goal here.
-    #goal.get_object_pose = pose_from_xytheta( 3.0, 9.7, 1.5 ) # moved x +1m; moved y +1m; th was 0.8; x was 3.7
-    goal.get_object_pose = pose_from_xytheta( 3.0, 8.7, 1.5 ) # moved x +1m; x was 3.7
-    goal.give_object_pose = pose_from_xytheta( 3.0, 5.2, -0.6 ) # x was 3.3
-    goal.return_home_pose = pose_from_xytheta( 3.1, 8.2, 0.8 ) # 2.4; 8.2, 0
+    goal.get_object_pose = pose_from_xytheta( 4.0, 9., -0.6 ) #
+    goal.give_object_pose = pose_from_xytheta( 4.7, 12.5, 1.5 ) # x was 3.3
+    goal.return_home_pose = pose_from_xytheta( 2., 11.6, 0.0 ) # 2.4; 8.2, 0
 
     rospy.loginfo("Sending delivery goal.")
     client.send_goal(goal)

@@ -1,0 +1,57 @@
+<launch>
+
+  <!-- Action server for tucking arms the normal way. -->
+  <node pkg="pr2_position_scripts" type="head_up.py" name="head_up" />
+  <node pkg="pr2_position_scripts" type="torso_up.py" name="torso_up" />
+
+  <!-- Action server for sensing motion of the grippers during pickup and dropoff. -->
+  <include file="$(find pr2_gripper_sensor_action)/launch/pr2_gripper_sensor_actions.launch" />
+
+  <!-- Navigation -->
+  <include file="$(find pr2_delivery)/launch/nav.launch" />
+
+  <!-- April Tags -->
+  <include file="$(find pr2_machine)/$(env ROBOT).machine" />
+
+  <node pkg="apriltags_ros" type="apriltag_detector_node" name="apriltag_detector" machine="c2" output="screen">
+    <!-- Remap topic required by the node to custom topics -->
+    <remap from="image_rect" to="/kinect2/hd/image_color_rect" />
+    <remap from="camera_info" to="/kinect2/hd/camera_info" />
+
+    <!-- Optional: Subscribe to the compressed stream-->
+    <param name="image_transport" type="str" value="compressed" />
+
+    <!-- Select the tag family: 16h5, 25h7, 25h9, 36h9, or 36h11(default) -->
+    <param name="tag_family" type="str" value="36h11" />
+
+    <!-- Enable projected optical measurements for more accurate tag transformations -->
+    <!-- This exists for backwards compatability and should be left true for new setups -->
+    <param name="projected_optics" type="bool" value="true" />
+
+    <!-- Describe the tags -->
+    <!-- from PR2's point of view:
+    - table 1 is on the left
+    - table 2 in front
+    - table 3 is on the right -->
+    <rosparam param="tag_descriptions">[
+      {id: 0, size: 0.056, frame_id: table_2},
+      {id: 1, size: 0.056, frame_id: object_1},
+      {id: 2, size: 0.056, frame_id: object_2},
+      {id: 3, size: 0.056, frame_id: table_3},
+      {id: 4, size: 0.056, frame_id: object_3},
+      {id: 5, size: 0.056, frame_id: object_4},
+      {id: 6, size: 0.056, frame_id: table_1},
+      {id: 7, size: 0.056, frame_id: dropoff}]
+    </rosparam>
+  </node>
+
+  <!-- MoveGroup -->
+  <!-- <include file="$(find pr2_moveit_config)/launch/move_group.launch" /> -->
+
+  <!-- Pick and Place Framework -->
+  <include file="$(find pr2_picknplace)/launch/pick_place.launch" />
+
+  <!-- Delivery action-sequence script -->
+  <node name="deliver_server" pkg="pr2_delivery" type="object_gathering.py" output="screen" />
+
+</launch>

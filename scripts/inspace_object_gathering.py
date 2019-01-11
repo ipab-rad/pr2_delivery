@@ -28,15 +28,13 @@ if __name__ == '__main__':
 
     goal = DeliverGoal()
     # Fill in goal here.
-    #goal.get_object_pose = pose_from_xytheta( 3.0, 9.7, 1.5 ) # moved x +1m; moved y +1m; th was 0.8; x was 3.7
-    goal.get_object_pose = pose_from_xytheta( 3.0, 8.7, 1.5 ) # moved x +1m; x was 3.7
-    goal.give_object_pose = pose_from_xytheta( 3.0, 5.2, -0.6 ) # x was 3.3
-    goal.return_home_pose = pose_from_xytheta( 3.1, 8.2, 0.8 ) # 2.4; 8.2, 0
+    goal.get_object_pose = pose_from_xytheta( 2.7, 8.4, 0 )
+    goal.give_object_pose = pose_from_xytheta( 2.7, 9.6, 1.57 )
+    goal.return_home_pose = pose_from_xytheta( 2.1, 8.4, 0 )
 
     rospy.loginfo("Sending delivery goal.")
     client.send_goal(goal)
     rospy.loginfo("Waiting for results ...")
-    # client.wait_for_result(rospy.Duration.from_sec(50.0))
     client.wait_for_result()
 
     rospy.loginfo(client.get_result())

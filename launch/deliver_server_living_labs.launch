@@ -4,6 +4,6 @@
 
   <!-- load the map -->
   <!-- EDITED BY DANIEL 12Jan17 -m 'maps server already started in nav.launch'
-	<node name="map_server" pkg="map_server" type="map_server"
-  	args="$(find amcl)/map/InspaceFullClean.pgm 0.02" /> -->
+#	<node name="map_server" pkg="map_server" type="map_server"
+#  	args="$(find amcl)/map/living_labs.pgm 0.02" /> -->
 </launch>

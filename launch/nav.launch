@@ -1,12 +1,13 @@
 <launch>
-  <param name="/amcl/initial_pose_x" value="2.08" />
-  <param name="/amcl/initial_pose_y" value="8.43" />
+  <param name="/amcl/initial_pose_x" value="2.00" />
+  <param name="/amcl/initial_pose_y" value="11.60" />
   <param name="/amcl/initial_pose_a" value="0.00" />
   <param name="/amcl/min_particles" value="1000" />
 
   <!-- load the map -->
   <node name="map_server" pkg="map_server" type="map_server"
-    args="$(find amcl)/map/inspace_clean.pgm 0.02" />
+    args="$(find amcl)/map/living_labs.pgm 0.02" />
+<!-- EIDT DANIEL 2 Nov 18: moved to Living labs     args="$(find amcl)/map/inspace_clean.pgm 0.02" /> -->
 
   <include file="$(find pr2_machine)/$(env ROBOT).machine" />
   <include file="$(find pr2_navigation_global)/amcl_node.xml" />
